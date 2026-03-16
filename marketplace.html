@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marketplace - Krushi Mandi</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <span class="logo">🌾</span>
+                <span class="brand-name">Krushi Mandi</span>
+            </div>
+            <ul class="nav-menu" id="navMenu">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="marketplace.html" class="active">Marketplace</a></li>
+                <li><a href="sell-request.html">Sell Crops</a></li>
+                <li><a href="about.html">About</a></li>
+                <li><a href="cart.html" class="cart-link">Cart <span class="cart-count" id="cartCount">0</span></a></li>
+                <li><a href="login.html" class="btn-login" id="authBtn">Login</a></li>
+            </ul>
+            <div class="hamburger" id="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <section class="page-header">
+        <div class="container">
+            <h1>Crops Marketplace</h1>
+            <p>Browse fresh crops directly from farmers</p>
+        </div>
+    </section>
+
+    <!-- Marketplace Content -->
+    <section class="marketplace-section">
+        <div class="container">
+            <!-- Filters -->
+            <div class="filters-bar">
+                <input type="text" id="searchInput" class="search-input" placeholder="Search crops...">
+                <select id="categoryFilter" class="filter-select">
+                    <option value="">All Categories</option>
+                    <option value="grains">Grains</option>
+                    <option value="vegetables">Vegetables</option>
+                    <option value="fruits">Fruits</option>
+                    <option value="pulses">Pulses</option>
+                </select>
+                <select id="locationFilter" class="filter-select">
+                    <option value="">All Locations</option>
+                    <option value="Mumbai">Mumbai</option>
+                    <option value="Delhi">Delhi</option>
+                    <option value="Bangalore">Bangalore</option>
+                    <option value="Pune">Pune</option>
+                    <option value="Nashik">Nashik</option>
+                </select>
+            </div>
+
+            <!-- Crops Grid -->
+            <div class="crops-grid" id="cropsGrid">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>🌾 Krushi Mandi</h3>
+                    <p>Empowering farmers and buyers through direct connections.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="marketplace.html">Marketplace</a></li>
+                        <li><a href="sell-request.html">Sell Crops</a></li>
+                        <li><a href="about.html">About Us</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Contact</h4>
+                    <ul>
+                        <li>Email: info@krushimandi.com</li>
+                        <li>Phone: +91 98765 43210</li>
+                        <li>Address: Agriculture Hub, India</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Krushi Mandi. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="script.js"></script>
+    <script>
+        let allCrops = [];
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCrops();
+            setupFilters();
+        });
+
+        function loadCrops() {
+            allCrops = getDefaultCrops();
+            displayCrops(allCrops);
+        }
+
+        function displayCrops(crops) {
+            const container = document.getElementById('cropsGrid');
+            container.innerHTML = '';
+
+            if (crops.length === 0) {
+                container.innerHTML = '<p class="no-results">No crops found matching your criteria.</p>';
+                return;
+            }
+
+            crops.forEach(crop => {
+                const cropCard = document.createElement('div');
+                cropCard.className = 'crop-card';
+                cropCard.innerHTML = `
+                    <img src="https://images.unsplash.com/photo-${crop.imageId}?w=400&h=300&fit=crop" alt="${crop.name}">
+                    <div class="crop-info">
+                        <h3>${crop.name}</h3>
+                        <p class="crop-category">${crop.category}</p>
+                        <p class="crop-price">₹${crop.price}/kg</p>
+                        <p class="crop-location">📍 ${crop.location}</p>
+                        <p class="crop-quantity">Available: ${crop.quantity} kg</p>
+                        <div class="crop-actions">
+                            <input type="number" class="quantity-input" value="1" min="1" max="${crop.quantity}" id="qty-${crop.id}">
+                            <button class="btn btn-primary btn-sm" onclick="addToCart('${crop.id}')">Add to Cart</button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(cropCard);
+            });
+        }
+
+        function setupFilters() {
+            const searchInput = document.getElementById('searchInput');
+            const categoryFilter = document.getElementById('categoryFilter');
+            const locationFilter = document.getElementById('locationFilter');
+
+            searchInput.addEventListener('input', filterCrops);
+            categoryFilter.addEventListener('change', filterCrops);
+            locationFilter.addEventListener('change', filterCrops);
+        }
+
+        function filterCrops() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const category = document.getElementById('categoryFilter').value;
+            const location = document.getElementById('locationFilter').value;
+
+            const filtered = allCrops.filter(crop => {
+                const matchesSearch = crop.name.toLowerCase().includes(searchTerm);
+                const matchesCategory = !category || crop.category === category;
+                const matchesLocation = !location || crop.location === location;
+                return matchesSearch && matchesCategory && matchesLocation;
+            });
+
+            displayCrops(filtered);
+        }
+
+        function addToCart(cropId) {
+            const user = getCurrentUser();
+            if (!user) {
+                showToast('Please login to add items to cart', 'error');
+                setTimeout(() => window.location.href = 'login.html', 1500);
+                return;
+            }
+
+            const qtyInput = document.getElementById(`qty-${cropId}`);
+            const quantity = parseInt(qtyInput.value);
+
+            const crop = allCrops.find(c => c.id === cropId);
+            if (!crop) return;
+
+            if (quantity > crop.quantity) {
+                showToast('Quantity exceeds available stock', 'error');
+                return;
+            }
+
+            let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            const existingItem = cart.find(item => item.id === cropId);
+
+            if (existingItem) {
+                existingItem.quantity += quantity;
+            } else {
+                cart.push({
+                    id: crop.id,
+                    name: crop.name,
+                    price: crop.price,
+                    quantity: quantity,
+                    imageId: crop.imageId,
+                    location: crop.location
+                });
+            }
+
+            localStorage.setItem('cart', JSON.stringify(cart));
+            updateCartCount();
+            showToast(`${crop.name} added to cart!`, 'success');
+        }
+    </script>
+</body>
+</html>

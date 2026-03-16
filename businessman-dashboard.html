@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Businessman Dashboard - Krushi Mandi</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <span class="logo">🌾</span>
+                <span class="brand-name">Krushi Mandi</span>
+            </div>
+            <ul class="nav-menu" id="navMenu">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="marketplace.html">Marketplace</a></li>
+                <li><a href="sell-request.html">Sell Crops</a></li>
+                <li><a href="about.html">About</a></li>
+                <li><a href="cart.html" class="cart-link">Cart <span class="cart-count" id="cartCount">0</span></a></li>
+                <li><a href="#" class="btn-login" id="authBtn" onclick="logout()">Logout</a></li>
+            </ul>
+            <div class="hamburger" id="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Dashboard Header -->
+    <section class="dashboard-header">
+        <div class="container">
+            <h1>Businessman Dashboard</h1>
+            <p>Welcome, <span id="userName"></span>!</p>
+        </div>
+    </section>
+
+    <!-- Dashboard Content -->
+    <section class="dashboard-section">
+        <div class="container">
+            <div class="dashboard-grid">
+                <!-- Stats Cards -->
+                <div class="stats-cards">
+                    <div class="stat-card">
+                        <h3 id="totalRequests">0</h3>
+                        <p>Total Requests</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="pendingRequests">0</h3>
+                        <p>Pending Review</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="acceptedRequests">0</h3>
+                        <p>Accepted</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="rejectedRequests">0</h3>
+                        <p>Rejected</p>
+                    </div>
+                </div>
+
+                <!-- Sell Requests -->
+                <div class="dashboard-table-section full-width">
+                    <h3>Farmer Sell Requests</h3>
+                    <div class="table-responsive">
+                        <table class="dashboard-table">
+                            <thead>
+                                <tr>
+                                    <th>Farmer</th>
+                                    <th>Crop Name</th>
+                                    <th>Category</th>
+                                    <th>Quantity</th>
+                                    <th>Expected Price</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="requestsTable">
+                                <!-- Will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>🌾 Krushi Mandi</h3>
+                    <p>Empowering farmers and buyers through direct connections.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="marketplace.html">Marketplace</a></li>
+                        <li><a href="sell-request.html">Sell Crops</a></li>
+                        <li><a href="about.html">About Us</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Contact</h4>
+                    <ul>
+                        <li>Email: info@krushimandi.com</li>
+                        <li>Phone: +91 98765 43210</li>
+                        <li>Address: Agriculture Hub, India</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Krushi Mandi. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const user = getCurrentUser();
+            if (!user || user.role !== 'businessman') {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            document.getElementById('userName').textContent = user.name;
+            loadBusinessmanData();
+        });
+
+        function loadBusinessmanData() {
+            const requests = JSON.parse(localStorage.getItem('sellRequests') || '[]');
+
+            // Update stats
+            document.getElementById('totalRequests').textContent = requests.length;
+            document.getElementById('pendingRequests').textContent = requests.filter(r => r.status === 'pending').length;
+            document.getElementById('acceptedRequests').textContent = requests.filter(r => r.status === 'accepted').length;
+            document.getElementById('rejectedRequests').textContent = requests.filter(r => r.status === 'rejected').length;
+
+            // Load requests table
+            const tbody = document.getElementById('requestsTable');
+            tbody.innerHTML = '';
+
+            if (requests.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center">No sell requests available yet.</td></tr>';
+                return;
+            }
+
+            requests.reverse().forEach((request, index) => {
+                const row = document.createElement('tr');
+                const statusClass = request.status === 'accepted' ? 'status-approved' : 
+                                  request.status === 'rejected' ? 'status-rejected' : 'status-pending';
+                
+                row.innerHTML = `
+                    <td>${request.farmerName}</td>
+                    <td>${request.cropName}</td>
+                    <td>${request.category}</td>
+                    <td>${request.quantity} kg</td>
+                    <td>₹${request.expectedPrice}/kg</td>
+                    <td><span class="status-badge ${statusClass}">${request.status}</span></td>
+                    <td>
+                        ${request.status === 'pending' ? `
+                            <button class="btn-action btn-accept" onclick="acceptRequest('${request.id}')">Accept</button>
+                            <button class="btn-action btn-reject" onclick="rejectRequest('${request.id}')">Reject</button>
+                        ` : '-'}
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function acceptRequest(requestId) {
+            let requests = JSON.parse(localStorage.getItem('sellRequests') || '[]');
+            const request = requests.find(r => r.id === requestId);
+            
+            if (request) {
+                request.status = 'accepted';
+                localStorage.setItem('sellRequests', JSON.stringify(requests));
+                showToast('Request accepted successfully!', 'success');
+                loadBusinessmanData();
+            }
+        }
+
+        function rejectRequest(requestId) {
+            let requests = JSON.parse(localStorage.getItem('sellRequests') || '[]');
+            const request = requests.find(r => r.id === requestId);
+            
+            if (request) {
+                request.status = 'rejected';
+                localStorage.setItem('sellRequests', JSON.stringify(requests));
+                showToast('Request rejected', 'error');
+                loadBusinessmanData();
+            }
+        }
+    </script>
+</body>
+</html>

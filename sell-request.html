@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sell Crops - Krushi Mandi</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <span class="logo">🌾</span>
+                <span class="brand-name">Krushi Mandi</span>
+            </div>
+            <ul class="nav-menu" id="navMenu">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="marketplace.html">Marketplace</a></li>
+                <li><a href="sell-request.html" class="active">Sell Crops</a></li>
+                <li><a href="about.html">About</a></li>
+                <li><a href="cart.html" class="cart-link">Cart <span class="cart-count" id="cartCount">0</span></a></li>
+                <li><a href="login.html" class="btn-login" id="authBtn">Login</a></li>
+            </ul>
+            <div class="hamburger" id="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <section class="page-header">
+        <div class="container">
+            <h1>Sell Your Crops</h1>
+            <p>Submit your sell request and compare prices across mandis</p>
+        </div>
+    </section>
+
+    <!-- Sell Request Form -->
+    <section class="form-section">
+        <div class="container">
+            <div class="form-container">
+                <form id="sellRequestForm" class="sell-form">
+                    <div class="form-group">
+                        <label for="cropName">Crop Name</label>
+                        <input type="text" id="cropName" required placeholder="e.g., Wheat, Rice, Tomato">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="category">Category</label>
+                        <select id="category" required>
+                            <option value="">Select Category</option>
+                            <option value="grains">Grains</option>
+                            <option value="vegetables">Vegetables</option>
+                            <option value="fruits">Fruits</option>
+                            <option value="pulses">Pulses</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="quantity">Quantity (kg)</label>
+                        <input type="number" id="quantity" required min="1" placeholder="Enter quantity in kg">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="expectedPrice">Expected Price (₹/kg)</label>
+                        <input type="number" id="expectedPrice" required min="1" placeholder="Your expected price per kg">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <textarea id="description" rows="4" placeholder="Describe your crop quality, harvest date, etc."></textarea>
+                    </div>
+
+                    <button type="button" class="btn btn-secondary" onclick="comparePrices()">Compare Mandi Prices</button>
+                    <button type="submit" class="btn btn-primary">Submit Sell Request</button>
+                </form>
+
+                <!-- Price Comparison -->
+                <div id="priceComparison" class="price-comparison" style="display: none;">
+                    <h3>Price Comparison Across Mandis</h3>
+                    <div id="priceComparisonGrid" class="price-grid">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>🌾 Krushi Mandi</h3>
+                    <p>Empowering farmers and buyers through direct connections.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="marketplace.html">Marketplace</a></li>
+                        <li><a href="sell-request.html">Sell Crops</a></li>
+                        <li><a href="about.html">About Us</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Contact</h4>
+                    <ul>
+                        <li>Email: info@krushimandi.com</li>
+                        <li>Phone: +91 98765 43210</li>
+                        <li>Address: Agriculture Hub, India</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Krushi Mandi. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="script.js"></script>
+    <script>
+        document.getElementById('sellRequestForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const user = getCurrentUser();
+            if (!user) {
+                showToast('Please login as a Farmer to submit sell requests', 'error');
+                setTimeout(() => window.location.href = 'login.html', 1500);
+                return;
+            }
+
+            if (user.role !== 'farmer') {
+                showToast('Only farmers can submit sell requests', 'error');
+                return;
+            }
+
+            const request = {
+                id: 'req_' + Date.now(),
+                farmerId: user.email,
+                farmerName: user.name,
+                cropName: document.getElementById('cropName').value,
+                category: document.getElementById('category').value,
+                quantity: parseInt(document.getElementById('quantity').value),
+                expectedPrice: parseFloat(document.getElementById('expectedPrice').value),
+                description: document.getElementById('description').value,
+                status: 'pending',
+                createdAt: new Date().toISOString()
+            };
+
+            let requests = JSON.parse(localStorage.getItem('sellRequests') || '[]');
+            requests.push(request);
+            localStorage.setItem('sellRequests', JSON.stringify(requests));
+
+            showToast('Sell request submitted successfully!', 'success');
+            document.getElementById('sellRequestForm').reset();
+            document.getElementById('priceComparison').style.display = 'none';
+        });
+
+        function comparePrices() {
+            const cropName = document.getElementById('cropName').value;
+            if (!cropName) {
+                showToast('Please enter crop name first', 'error');
+                return;
+            }
+
+            const mandis = getMandiPrices();
+            const comparisonDiv = document.getElementById('priceComparison');
+            const gridDiv = document.getElementById('priceComparisonGrid');
+
+            gridDiv.innerHTML = '';
+
+            mandis.forEach(mandi => {
+                const priceCard = document.createElement('div');
+                priceCard.className = 'price-card';
+                priceCard.innerHTML = `
+                    <h4>${mandi.location}</h4>
+                    <p class="price-amount">₹${mandi.basePrice}/kg</p>
+                    <p class="price-trend ${mandi.trend === 'up' ? 'trend-up' : 'trend-down'}">
+                        ${mandi.trend === 'up' ? '↑' : '↓'} ${mandi.change}%
+                    </p>
+                `;
+                gridDiv.appendChild(priceCard);
+            });
+
+            comparisonDiv.style.display = 'block';
+            showToast('Prices loaded from 5 mandis', 'success');
+        }
+    </script>
+</body>
+</html>

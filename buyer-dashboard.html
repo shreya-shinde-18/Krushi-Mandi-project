@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buyer Dashboard - Krushi Mandi</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <span class="logo">🌾</span>
+                <span class="brand-name">Krushi Mandi</span>
+            </div>
+            <ul class="nav-menu" id="navMenu">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="marketplace.html">Marketplace</a></li>
+                <li><a href="sell-request.html">Sell Crops</a></li>
+                <li><a href="about.html">About</a></li>
+                <li><a href="cart.html" class="cart-link">Cart <span class="cart-count" id="cartCount">0</span></a></li>
+                <li><a href="#" class="btn-login" id="authBtn" onclick="logout()">Logout</a></li>
+            </ul>
+            <div class="hamburger" id="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Dashboard Header -->
+    <section class="dashboard-header">
+        <div class="container">
+            <h1>Buyer Dashboard</h1>
+            <p>Welcome, <span id="userName"></span>!</p>
+        </div>
+    </section>
+
+    <!-- Dashboard Content -->
+    <section class="dashboard-section">
+        <div class="container">
+            <div class="dashboard-grid">
+                <!-- Stats Cards -->
+                <div class="stats-cards">
+                    <div class="stat-card">
+                        <h3 id="totalOrders">0</h3>
+                        <p>Total Orders</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="pendingOrders">0</h3>
+                        <p>Pending</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="completedOrders">0</h3>
+                        <p>Completed</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="totalSpent">₹0</h3>
+                        <p>Total Spent</p>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="quick-actions">
+                    <h3>Quick Actions</h3>
+                    <a href="marketplace.html" class="action-btn">
+                        <span class="action-icon">🛒</span>
+                        <span>Browse Marketplace</span>
+                    </a>
+                    <a href="cart.html" class="action-btn">
+                        <span class="action-icon">🛍️</span>
+                        <span>View Cart</span>
+                    </a>
+                </div>
+
+                <!-- My Orders -->
+                <div class="dashboard-table-section">
+                    <h3>My Orders</h3>
+                    <div class="table-responsive">
+                        <table class="dashboard-table">
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Items</th>
+                                    <th>Total Amount</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ordersTable">
+                                <!-- Will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>🌾 Krushi Mandi</h3>
+                    <p>Empowering farmers and buyers through direct connections.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="marketplace.html">Marketplace</a></li>
+                        <li><a href="sell-request.html">Sell Crops</a></li>
+                        <li><a href="about.html">About Us</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Contact</h4>
+                    <ul>
+                        <li>Email: info@krushimandi.com</li>
+                        <li>Phone: +91 98765 43210</li>
+                        <li>Address: Agriculture Hub, India</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Krushi Mandi. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const user = getCurrentUser();
+            if (!user || user.role !== 'buyer') {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            document.getElementById('userName').textContent = user.name;
+            loadBuyerData();
+        });
+
+        function loadBuyerData() {
+            const user = getCurrentUser();
+            const allOrders = JSON.parse(localStorage.getItem('orders') || '[]');
+            const myOrders = allOrders.filter(order => order.userId === user.email);
+
+            // Calculate stats
+            const totalSpent = myOrders.reduce((sum, order) => sum + order.total, 0);
+            
+            document.getElementById('totalOrders').textContent = myOrders.length;
+            document.getElementById('pendingOrders').textContent = myOrders.filter(o => o.status === 'pending').length;
+            document.getElementById('completedOrders').textContent = myOrders.filter(o => o.status === 'completed').length;
+            document.getElementById('totalSpent').textContent = '₹' + totalSpent;
+
+            // Load orders table
+            const tbody = document.getElementById('ordersTable');
+            tbody.innerHTML = '';
+
+            if (myOrders.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center">No orders yet. <a href="marketplace.html">Start shopping!</a></td></tr>';
+                return;
+            }
+
+            myOrders.reverse().forEach(order => {
+                const row = document.createElement('tr');
+                const itemsCount = order.items.length;
+                const statusClass = order.status === 'completed' ? 'status-approved' : 'status-pending';
+                
+                row.innerHTML = `
+                    <td>${order.id}</td>
+                    <td>${itemsCount} item(s)</td>
+                    <td>₹${order.total}</td>
+                    <td><span class="status-badge ${statusClass}">${order.status}</span></td>
+                    <td>${new Date(order.createdAt).toLocaleDateString()}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+    </script>
+</body>
+</html>

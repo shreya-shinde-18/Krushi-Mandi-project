@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farmer Dashboard - Krushi Mandi</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <span class="logo">🌾</span>
+                <span class="brand-name">Krushi Mandi</span>
+            </div>
+            <ul class="nav-menu" id="navMenu">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="marketplace.html">Marketplace</a></li>
+                <li><a href="sell-request.html">Sell Crops</a></li>
+                <li><a href="about.html">About</a></li>
+                <li><a href="cart.html" class="cart-link">Cart <span class="cart-count" id="cartCount">0</span></a></li>
+                <li><a href="#" class="btn-login" id="authBtn" onclick="logout()">Logout</a></li>
+            </ul>
+            <div class="hamburger" id="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Dashboard Header -->
+    <section class="dashboard-header">
+        <div class="container">
+            <h1>Farmer Dashboard</h1>
+            <p>Welcome, <span id="userName"></span>!</p>
+        </div>
+    </section>
+
+    <!-- Dashboard Content -->
+    <section class="dashboard-section">
+        <div class="container">
+            <div class="dashboard-grid">
+                <!-- Stats Cards -->
+                <div class="stats-cards">
+                    <div class="stat-card">
+                        <h3 id="totalRequests">0</h3>
+                        <p>Total Requests</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="pendingRequests">0</h3>
+                        <p>Pending</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="acceptedRequests">0</h3>
+                        <p>Accepted</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="rejectedRequests">0</h3>
+                        <p>Rejected</p>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="quick-actions">
+                    <h3>Quick Actions</h3>
+                    <a href="sell-request.html" class="action-btn">
+                        <span class="action-icon">📝</span>
+                        <span>Create Sell Request</span>
+                    </a>
+                    <a href="marketplace.html" class="action-btn">
+                        <span class="action-icon">🛒</span>
+                        <span>Browse Marketplace</span>
+                    </a>
+                </div>
+
+                <!-- My Sell Requests -->
+                <div class="dashboard-table-section">
+                    <h3>My Sell Requests</h3>
+                    <div class="table-responsive">
+                        <table class="dashboard-table">
+                            <thead>
+                                <tr>
+                                    <th>Crop Name</th>
+                                    <th>Quantity</th>
+                                    <th>Expected Price</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody id="requestsTable">
+                                <!-- Will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>🌾 Krushi Mandi</h3>
+                    <p>Empowering farmers and buyers through direct connections.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="marketplace.html">Marketplace</a></li>
+                        <li><a href="sell-request.html">Sell Crops</a></li>
+                        <li><a href="about.html">About Us</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Contact</h4>
+                    <ul>
+                        <li>Email: info@krushimandi.com</li>
+                        <li>Phone: +91 98765 43210</li>
+                        <li>Address: Agriculture Hub, India</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Krushi Mandi. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const user = getCurrentUser();
+            if (!user || user.role !== 'farmer') {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            document.getElementById('userName').textContent = user.name;
+            loadFarmerData();
+        });
+
+        function loadFarmerData() {
+            const user = getCurrentUser();
+            const allRequests = JSON.parse(localStorage.getItem('sellRequests') || '[]');
+            const myRequests = allRequests.filter(req => req.farmerId === user.email);
+
+            // Update stats
+            document.getElementById('totalRequests').textContent = myRequests.length;
+            document.getElementById('pendingRequests').textContent = myRequests.filter(r => r.status === 'pending').length;
+            document.getElementById('acceptedRequests').textContent = myRequests.filter(r => r.status === 'accepted').length;
+            document.getElementById('rejectedRequests').textContent = myRequests.filter(r => r.status === 'rejected').length;
+
+            // Load requests table
+            const tbody = document.getElementById('requestsTable');
+            tbody.innerHTML = '';
+
+            if (myRequests.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center">No sell requests yet. <a href="sell-request.html">Create one now!</a></td></tr>';
+                return;
+            }
+
+            myRequests.reverse().forEach(request => {
+                const row = document.createElement('tr');
+                const statusClass = request.status === 'accepted' ? 'status-approved' : 
+                                  request.status === 'rejected' ? 'status-rejected' : 'status-pending';
+                
+                row.innerHTML = `
+                    <td>${request.cropName}</td>
+                    <td>${request.quantity} kg</td>
+                    <td>₹${request.expectedPrice}/kg</td>
+                    <td><span class="status-badge ${statusClass}">${request.status}</span></td>
+                    <td>${new Date(request.createdAt).toLocaleDateString()}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+    </script>
+</body>
+</html>

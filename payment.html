@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment - Krushi Mandi</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <span class="logo">🌾</span>
+                <span class="brand-name">Krushi Mandi</span>
+            </div>
+            <ul class="nav-menu" id="navMenu">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="marketplace.html">Marketplace</a></li>
+                <li><a href="sell-request.html">Sell Crops</a></li>
+                <li><a href="about.html">About</a></li>
+                <li><a href="cart.html" class="cart-link">Cart <span class="cart-count" id="cartCount">0</span></a></li>
+                <li><a href="login.html" class="btn-login" id="authBtn">Login</a></li>
+            </ul>
+            <div class="hamburger" id="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <section class="page-header">
+        <div class="container">
+            <h1>Payment</h1>
+            <p>Complete your order</p>
+        </div>
+    </section>
+
+    <!-- Payment Section -->
+    <section class="payment-section">
+        <div class="container">
+            <div class="payment-container">
+                <div class="payment-form-section">
+                    <h3>Delivery Information</h3>
+                    <form id="paymentForm">
+                        <div class="form-group">
+                            <label for="fullName">Full Name</label>
+                            <input type="text" id="fullName" required placeholder="Enter your full name">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="phone">Phone Number</label>
+                            <input type="tel" id="phone" required placeholder="Enter your phone number">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="address">Delivery Address</label>
+                            <textarea id="address" rows="3" required placeholder="Enter complete delivery address"></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="city">City</label>
+                            <input type="text" id="city" required placeholder="Enter your city">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="pincode">Pincode</label>
+                            <input type="text" id="pincode" required placeholder="Enter pincode">
+                        </div>
+
+                        <h3>Payment Method</h3>
+                        <div class="payment-methods">
+                            <label class="payment-option">
+                                <input type="radio" name="payment" value="cod" checked>
+                                <span>Cash on Delivery</span>
+                            </label>
+                            <label class="payment-option">
+                                <input type="radio" name="payment" value="upi">
+                                <span>UPI Payment</span>
+                            </label>
+                            <label class="payment-option">
+                                <input type="radio" name="payment" value="card">
+                                <span>Credit/Debit Card</span>
+                            </label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-block">Place Order</button>
+                    </form>
+                </div>
+
+                <div class="order-summary-section">
+                    <h3>Order Summary</h3>
+                    <div id="orderItems" class="order-items">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                    <div class="summary-totals">
+                        <div class="summary-row">
+                            <span>Subtotal:</span>
+                            <span id="summarySubtotal">₹0</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Delivery:</span>
+                            <span id="summaryDelivery">₹100</span>
+                        </div>
+                        <div class="summary-row total-row">
+                            <span>Total:</span>
+                            <span id="summaryTotal">₹0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>🌾 Krushi Mandi</h3>
+                    <p>Empowering farmers and buyers through direct connections.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="marketplace.html">Marketplace</a></li>
+                        <li><a href="sell-request.html">Sell Crops</a></li>
+                        <li><a href="about.html">About Us</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Contact</h4>
+                    <ul>
+                        <li>Email: info@krushimandi.com</li>
+                        <li>Phone: +91 98765 43210</li>
+                        <li>Address: Agriculture Hub, India</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Krushi Mandi. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const user = getCurrentUser();
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Pre-fill user data
+            document.getElementById('fullName').value = user.name || '';
+            document.getElementById('phone').value = user.phone || '';
+
+            loadOrderSummary();
+        });
+
+        function loadOrderSummary() {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            const container = document.getElementById('orderItems');
+
+            if (cart.length === 0) {
+                window.location.href = 'cart.html';
+                return;
+            }
+
+            let subtotal = 0;
+            container.innerHTML = '';
+
+            cart.forEach(item => {
+                const itemTotal = item.price * item.quantity;
+                subtotal += itemTotal;
+
+                const orderItem = document.createElement('div');
+                orderItem.className = 'order-item';
+                orderItem.innerHTML = `
+                    <div class="order-item-details">
+                        <p class="order-item-name">${item.name}</p>
+                        <p class="order-item-qty">${item.quantity} kg × ₹${item.price}</p>
+                    </div>
+                    <p class="order-item-price">₹${itemTotal}</p>
+                `;
+                container.appendChild(orderItem);
+            });
+
+            const delivery = 100;
+            const total = subtotal + delivery;
+
+            document.getElementById('summarySubtotal').textContent = '₹' + subtotal;
+            document.getElementById('summaryDelivery').textContent = '₹' + delivery;
+            document.getElementById('summaryTotal').textContent = '₹' + total;
+        }
+
+        document.getElementById('paymentForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const user = getCurrentUser();
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            const paymentMethod = document.querySelector('input[name="payment"]:checked').value;
+
+            const order = {
+                id: 'order_' + Date.now(),
+                userId: user.email,
+                userName: user.name,
+                items: cart,
+                deliveryInfo: {
+                    name: document.getElementById('fullName').value,
+                    phone: document.getElementById('phone').value,
+                    address: document.getElementById('address').value,
+                    city: document.getElementById('city').value,
+                    pincode: document.getElementById('pincode').value
+                },
+                paymentMethod: paymentMethod,
+                subtotal: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+                delivery: 100,
+                total: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0) + 100,
+                status: 'pending',
+                createdAt: new Date().toISOString()
+            };
+
+            // Save order
+            let orders = JSON.parse(localStorage.getItem('orders') || '[]');
+            orders.push(order);
+            localStorage.setItem('orders', JSON.stringify(orders));
+
+            // Clear cart
+            localStorage.setItem('cart', '[]');
+            updateCartCount();
+
+            showToast('Order placed successfully!', 'success');
+            setTimeout(() => {
+                window.location.href = 'buyer-dashboard.html';
+            }, 2000);
+        });
+    </script>
+</body>
+</html>

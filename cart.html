@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopping Cart - Krushi Mandi</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <span class="logo">🌾</span>
+                <span class="brand-name">Krushi Mandi</span>
+            </div>
+            <ul class="nav-menu" id="navMenu">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="marketplace.html">Marketplace</a></li>
+                <li><a href="sell-request.html">Sell Crops</a></li>
+                <li><a href="about.html">About</a></li>
+                <li><a href="cart.html" class="cart-link active">Cart <span class="cart-count" id="cartCount">0</span></a></li>
+                <li><a href="login.html" class="btn-login" id="authBtn">Login</a></li>
+            </ul>
+            <div class="hamburger" id="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <section class="page-header">
+        <div class="container">
+            <h1>Shopping Cart</h1>
+            <p>Review your items before checkout</p>
+        </div>
+    </section>
+
+    <!-- Cart Content -->
+    <section class="cart-section">
+        <div class="container">
+            <div class="cart-container">
+                <div class="cart-items" id="cartItems">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+
+                <div class="cart-summary">
+                    <h3>Order Summary</h3>
+                    <div class="summary-row">
+                        <span>Subtotal:</span>
+                        <span id="subtotal">₹0</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Delivery:</span>
+                        <span id="delivery">₹100</span>
+                    </div>
+                    <div class="summary-row total-row">
+                        <span>Total:</span>
+                        <span id="total">₹0</span>
+                    </div>
+                    <button class="btn btn-primary btn-block" onclick="proceedToCheckout()">Proceed to Checkout</button>
+                    <a href="marketplace.html" class="btn btn-secondary btn-block">Continue Shopping</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>🌾 Krushi Mandi</h3>
+                    <p>Empowering farmers and buyers through direct connections.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="marketplace.html">Marketplace</a></li>
+                        <li><a href="sell-request.html">Sell Crops</a></li>
+                        <li><a href="about.html">About Us</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Contact</h4>
+                    <ul>
+                        <li>Email: info@krushimandi.com</li>
+                        <li>Phone: +91 98765 43210</li>
+                        <li>Address: Agriculture Hub, India</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Krushi Mandi. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', loadCart);
+
+        function loadCart() {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            const container = document.getElementById('cartItems');
+
+            if (cart.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-cart">
+                        <h3>Your cart is empty</h3>
+                        <p>Add some crops from the marketplace to get started!</p>
+                        <a href="marketplace.html" class="btn btn-primary">Browse Marketplace</a>
+                    </div>
+                `;
+                updateSummary(0);
+                return;
+            }
+
+            container.innerHTML = '';
+            let subtotal = 0;
+
+            cart.forEach((item, index) => {
+                const itemTotal = item.price * item.quantity;
+                subtotal += itemTotal;
+
+                const cartItem = document.createElement('div');
+                cartItem.className = 'cart-item';
+                cartItem.innerHTML = `
+                    <img src="https://images.unsplash.com/photo-${item.imageId}?w=150&h=150&fit=crop" alt="${item.name}">
+                    <div class="cart-item-info">
+                        <h4>${item.name}</h4>
+                        <p class="cart-item-location">📍 ${item.location}</p>
+                        <p class="cart-item-price">₹${item.price}/kg</p>
+                    </div>
+                    <div class="cart-item-quantity">
+                        <button class="qty-btn" onclick="updateQuantity(${index}, -1)">-</button>
+                        <span class="qty-value">${item.quantity}</span>
+                        <button class="qty-btn" onclick="updateQuantity(${index}, 1)">+</button>
+                    </div>
+                    <div class="cart-item-total">
+                        <p class="item-total">₹${itemTotal}</p>
+                        <button class="btn-remove" onclick="removeItem(${index})">Remove</button>
+                    </div>
+                `;
+                container.appendChild(cartItem);
+            });
+
+            updateSummary(subtotal);
+        }
+
+        function updateQuantity(index, change) {
+            let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            cart[index].quantity += change;
+
+            if (cart[index].quantity <= 0) {
+                cart.splice(index, 1);
+            }
+
+            localStorage.setItem('cart', JSON.stringify(cart));
+            updateCartCount();
+            loadCart();
+        }
+
+        function removeItem(index) {
+            let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            cart.splice(index, 1);
+            localStorage.setItem('cart', JSON.stringify(cart));
+            updateCartCount();
+            loadCart();
+            showToast('Item removed from cart', 'success');
+        }
+
+        function updateSummary(subtotal) {
+            const delivery = subtotal > 0 ? 100 : 0;
+            const total = subtotal + delivery;
+
+            document.getElementById('subtotal').textContent = '₹' + subtotal;
+            document.getElementById('delivery').textContent = '₹' + delivery;
+            document.getElementById('total').textContent = '₹' + total;
+        }
+
+        function proceedToCheckout() {
+            const user = getCurrentUser();
+            if (!user) {
+                showToast('Please login to proceed', 'error');
+                setTimeout(() => window.location.href = 'login.html', 1500);
+                return;
+            }
+
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            if (cart.length === 0) {
+                showToast('Your cart is empty', 'error');
+                return;
+            }
+
+            window.location.href = 'payment.html';
+        }
+    </script>
+</body>
+</html>
